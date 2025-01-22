@@ -1,0 +1,240 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .btn-primary {
+    @apply bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50;
+  }
+
+  .btn-icon {
+    @apply p-2 text-gray-500 hover:text-blue-600 rounded-lg hover:bg-gray-100 transition-colors duration-200;
+  }
+  
+  .card {
+    @apply bg-white rounded-xl shadow-lg p-6;
+  }
+  
+  .input-field {
+    @apply bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5;
+  }
+
+  .setting-group {
+    @apply space-y-2;
+  }
+
+  .folder {
+    @apply ml-6 pl-2 py-1;
+  }
+
+  .folder-title {
+    @apply cursor-pointer p-2 hover:bg-gray-50 rounded-lg mb-1 flex items-center text-gray-700 relative transition-colors duration-200;
+  }
+
+  .folder-title:hover {
+    @apply bg-gray-100;
+  }
+
+  .folder-title-icon {
+    @apply w-5 h-5 mr-2 text-gray-500 transition-transform duration-200;
+  }
+
+  .folder-title-icon[data-state="open"] {
+    @apply rotate-90;
+  }
+
+  .folder-content {
+    @apply overflow-hidden transition-all duration-200;
+  }
+
+  .folder-content[data-state="closed"] {
+    @apply h-0;
+  }
+
+  .bookmark-item {
+    @apply ml-6 p-2 flex items-center text-gray-600 hover:bg-gray-50 rounded-lg transition-colors duration-200;
+  }
+
+  .bookmark-item a {
+    @apply text-blue-600 hover:text-blue-800 hover:underline flex-1;
+  }
+
+  .bookmark-icon {
+    @apply w-4 h-4 mr-2 text-gray-400;
+  }
+
+  /* 文件夹模板样式 */
+  .folder-item {
+    @apply transition-all duration-200;
+  }
+
+  .folder-item button {
+    @apply transition-all duration-200;
+  }
+
+  .folder-toggle {
+    @apply cursor-pointer transition-transform duration-200 ease-in-out;
+  }
+
+  .folder-content {
+    @apply transition-all duration-200 ease-in-out;
+  }
+
+  .folder-name {
+    @apply select-none;
+  }
+
+  /* 通知样式 */
+  .notification {
+    @apply z-50 transition-all duration-300 ease-in-out;
+  }
+
+  .notification-hide {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  /* 按钮过渡效果 */
+  .btn-secondary {
+    @apply px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md 
+           transition-all duration-200 ease-in-out transform hover:scale-105
+           focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-opacity-50;
+  }
+
+  /* 导入按钮特殊样式 */
+  #importRootStructure {
+    @apply border border-gray-200 hover:border-gray-300 shadow-sm;
+  }
+
+  #importRootStructure svg {
+    @apply transition-transform duration-200;
+  }
+
+  #importRootStructure:hover svg {
+    transform: translateY(-1px);
+  }
+
+  /* 选择框样式 */
+  .select-field {
+    @apply block w-full pl-3 pr-10 py-2 text-sm border border-gray-200 
+           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+           rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 transition-all duration-200;
+  }
+
+  .select-field option {
+    @apply py-2 px-3 text-sm cursor-pointer;
+  }
+
+  .select-field option:first-child {
+    @apply font-medium text-blue-600;
+  }
+
+  .select-field option:disabled {
+    @apply bg-gray-50 text-gray-400;
+  }
+
+  /* 选择框hover效果 */
+  .select-field:hover {
+    @apply border-gray-300;
+  }
+
+  /* 选择框focus效果 */
+  .select-field:focus {
+    @apply ring-2 ring-blue-500 border-blue-500 bg-white;
+  }
+
+  /* 美化滚动条 */
+  .select-field::-webkit-scrollbar {
+    @apply w-1.5;
+  }
+
+  .select-field::-webkit-scrollbar-track {
+    @apply bg-gray-100;
+  }
+
+  .select-field::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 hover:bg-gray-400 rounded-full transition-colors duration-200;
+  }
+
+  /* 下拉选项样式 */
+  .select-field option {
+    @apply text-gray-700 bg-white;
+  }
+
+  .select-field option:hover {
+    @apply bg-gray-50;
+  }
+
+  /* 选中状态 */
+  .select-field option:checked {
+    @apply bg-blue-50 text-blue-600 font-medium;
+  }
+
+  /* 智能整理面板样式 */
+  #smartOrganizePanel {
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  #smartOrganizePanel .card {
+    @apply h-[600px] flex flex-col;
+  }
+
+  #smartOrganizePanel h2 {
+    @apply sticky top-0 bg-white z-10 py-4 border-b border-gray-100;
+  }
+
+  #originalBookmarkTree,
+  #templateStructure {
+    @apply flex-1 overflow-y-auto;
+  }
+
+  #originalBookmarkTree::-webkit-scrollbar,
+  #templateStructure::-webkit-scrollbar {
+    @apply w-1.5;
+  }
+
+  #originalBookmarkTree::-webkit-scrollbar-track,
+  #templateStructure::-webkit-scrollbar-track {
+    @apply bg-gray-100;
+  }
+
+  #originalBookmarkTree::-webkit-scrollbar-thumb,
+  #templateStructure::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 hover:bg-gray-400 rounded-full transition-colors duration-200;
+  }
+
+  /* 默认视图过渡 */
+  #defaultView {
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  #defaultView.hidden {
+    @apply opacity-0;
+  }
+
+  /* 智能整理按钮特殊效果 */
+  #smartOrganizeBtn {
+    @apply relative overflow-hidden;
+  }
+
+  #smartOrganizeBtn::after {
+    content: '';
+    @apply absolute inset-0 bg-white opacity-0 transition-opacity duration-300;
+  }
+
+  #smartOrganizeBtn:hover::after {
+    @apply opacity-10;
+  }
+
+  #smartOrganizeBtn:active::after {
+    @apply opacity-20;
+  }
+
+  #smartOrganizeBtn svg {
+    @apply transition-transform duration-300;
+  }
+
+  #smartOrganizeBtn:hover svg {
+    @apply scale-110;
+  }
+} 

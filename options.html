@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SelfBookmark</title>
+  <link href="dist/output.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <div class="container mx-auto px-4 py-8 max-w-4xl">
+    <header class="mb-8 animate-fade-in flex justify-between items-center">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">SelfBookmark</h1>
+        <div class="h-1 w-20 bg-blue-500 rounded"></div>
+      </div>
+      <div class="flex space-x-4">
+        <button id="smartOrganizeBtn" class="btn-primary flex items-center space-x-2" aria-label="智能整理">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+          <span>智能整理</span>
+        </button>
+        <button id="settingsButton" class="btn-icon group" aria-label="打开设置">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- 智能整理面板 -->
+    <div id="smartOrganizePanel" class="hidden">
+      <div class="grid grid-cols-2 gap-6">
+        <!-- 左侧：原书签树 -->
+        <div class="card animate-fade-in">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">当前书签结构</h2>
+          <div id="originalBookmarkTree" class="max-h-[600px] overflow-y-auto">
+            <!-- 原书签树将在这里动态生成 -->
+          </div>
+        </div>
+
+        <!-- 右侧：文件夹模板 -->
+        <div class="card animate-fade-in">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">目标文件夹结构</h2>
+          <div id="templateStructure" class="max-h-[600px] overflow-y-auto">
+            <!-- 模板结构将在这里动态生成 -->
+          </div>
+        </div>
+      </div>
+      
+      <div class="mt-6 flex justify-end space-x-4">
+        <button id="cancelOrganize" class="btn-secondary">取消</button>
+        <button id="confirmOrganize" class="btn-primary">确认整理</button>
+      </div>
+    </div>
+
+    <!-- 默认视图 -->
+    <div id="defaultView">
+      <!-- 书签树 -->
+      <div id="bookmarkTree" class="card animate-fade-in">
+        <!-- SVG Icons -->
+        <div class="hidden">
+          <svg id="folder-icon" class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+          </svg>
+          <svg id="chevron-icon" class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+          <svg id="bookmark-icon" class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- 设置面板 -->
+    <div id="settingsPanel" class="fixed right-0 top-0 h-full w-1/3 bg-white shadow-2xl transform translate-x-full transition-transform duration-300 z-50 flex flex-col">
+      <div class="flex-1 overflow-y-auto">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-semibold text-gray-800">设置</h2>
+          </div>
+          
+          <div class="space-y-6">
+            <!-- 根文件夹设置 -->
+            <div class="mb-6">
+              <h3 class="text-sm font-medium text-gray-700 mb-2">根文件夹设置</h3>
+              <div class="border rounded-lg p-4 bg-white">
+                <div class="flex flex-col space-y-2">
+                  <div class="flex items-center space-x-2">
+                    <svg class="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                    </svg>
+                    <span class="text-sm text-gray-600">选择要显示的根文件夹</span>
+                  </div>
+                  <div class="relative">
+                    <select id="rootFolderSelect" class="select-field appearance-none bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
+                      <option value="">加载中...</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                      <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 文件夹模板设置 -->
+            <div class="mb-6">
+              <h3 class="text-sm font-medium text-gray-700 mb-2">文件夹模板设置</h3>
+              <div id="folderTemplateTree" class="border rounded-lg p-4 bg-white">
+                <div class="flex justify-between items-center mb-4">
+                  <div class="flex space-x-2">
+                    <button id="addRootFolder" class="btn-secondary text-sm">
+                      添加根文件夹
+                    </button>
+                    <button id="importRootStructure" class="btn-secondary text-sm flex items-center">
+                      <svg class="w-4 h-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                      </svg>
+                      导入根目录结构
+                    </button>
+                  </div>
+                </div>
+                <div id="templateTreeContainer" class="space-y-2">
+                  <!-- 模板树将在这里动态生成 -->
+                </div>
+              </div>
+            </div>
+
+            <!-- OpenAI API 设置 -->
+            <div class="mb-6">
+              <h3 class="text-sm font-medium text-gray-700 mb-2">OpenAI API 设置</h3>
+              <div class="border rounded-lg p-4 bg-white space-y-4">
+                <!-- API Key -->
+                <div>
+                  <label for="openaiApiKey" class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+                  <div class="relative">
+                    <input type="password" 
+                           id="openaiApiKey" 
+                           class="input-field pr-10" 
+                           placeholder="输入你的 OpenAI API Key">
+                    <button id="toggleApiKey" 
+                            class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-gray-700">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                
+                <!-- API URL -->
+                <div>
+                  <label for="openaiApiUrl" class="block text-sm font-medium text-gray-700 mb-1">API URL</label>
+                  <input type="url" 
+                         id="openaiApiUrl" 
+                         class="input-field" 
+                         placeholder="https://api.openai.com/v1"
+                         value="https://api.openai.com/v1">
+                </div>
+                
+                <!-- Model Selection -->
+                <div>
+                  <label for="openaiModel" class="block text-sm font-medium text-gray-700 mb-1">模型选择</label>
+                  <div class="space-y-2">
+                    <div class="relative">
+                      <select id="openaiModel" class="select-field appearance-none">
+                        <option value="gpt-4">GPT-4</option>
+                        <option value="gpt-4-turbo-preview">GPT-4 Turbo</option>
+                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                        <option value="custom">自定义模型</option>
+                      </select>
+                      <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                      </div>
+                    </div>
+                    
+                    <!-- 自定义模型输入框 -->
+                    <div id="customModelInput" class="hidden">
+                      <input type="text" 
+                             id="openaiCustomModel" 
+                             class="input-field" 
+                             placeholder="输入自定义模型名称，例如: gpt-4-32k">
+                      <div class="text-xs text-gray-500 mt-1">
+                        请输入完整的模型标识符
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-6 bg-gray-50 border-t">
+        <div class="flex space-x-4">
+          <button id="closeSettings" class="btn-secondary flex-1">
+            取消
+          </button>
+          <button id="saveSettings" class="btn-primary flex-1">
+            保存设置
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="options.js"></script>
+</body>
+</html> 

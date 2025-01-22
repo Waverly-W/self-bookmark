@@ -1,0 +1,12 @@
+{
+  "name": "SelfBookmark",
+  "description": "A Personal Bookmark Management Extension",
+  "version": "1.0",
+  "manifest_version": 3,
+  "permissions": ["bookmarks", "storage"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "selfbookmark.png"
+  },
+  "options_page": "options.html"
+}

@@ -1,0 +1,19 @@
+{
+  "name": "bookmark002",
+  "version": "1.0.0",
+  "description": "This Chrome extension helps you manage your bookmarks efficiently and personally.",
+  "main": "options.js",
+  "scripts": {
+    "build": "postcss ./src/input.css -o ./dist/output.css",
+    "watch": "postcss ./src/input.css -o ./dist/output.css --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.35",
+    "postcss-cli": "^11.0.0",
+    "tailwindcss": "^3.4.1"
+  }
+}
