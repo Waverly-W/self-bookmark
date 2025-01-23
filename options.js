@@ -75,6 +75,8 @@ document.addEventListener('DOMContentLoaded', () => {
     defaultView.classList.add('hidden');
     smartOrganizePanel.classList.remove('hidden');
     isOrganizePanelOpen = true;
+    smartOrganizeBtn.classList.remove('btn-primary');
+    smartOrganizeBtn.classList.add('btn-secondary', 'bg-gray-200');
     loadOrganizePanelData();
   }
 
@@ -84,6 +86,8 @@ document.addEventListener('DOMContentLoaded', () => {
     defaultView.classList.remove('hidden');
     smartOrganizePanel.classList.add('hidden');
     isOrganizePanelOpen = false;
+    smartOrganizeBtn.classList.remove('btn-secondary', 'bg-gray-200');
+    smartOrganizeBtn.classList.add('btn-primary');
   }
 
   // 保存设置
@@ -296,8 +300,14 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   closeSettings.addEventListener('click', closeSettingsPanel);
   saveSettingsButton.addEventListener('click', handleSaveSettings);
-  smartOrganizeBtn.addEventListener('click', openOrganizePanel);
-  cancelOrganize.addEventListener('click', closeOrganizePanel);
+  smartOrganizeBtn.addEventListener('click', () => {
+    if (isOrganizePanelOpen) {
+      closeOrganizePanel();
+    } else {
+      openOrganizePanel();
+    }
+  });
+  document.getElementById('startOrganize').addEventListener('click', handleStartOrganize);
   confirmOrganize.addEventListener('click', handleConfirmOrganize);
 
   // 初始化
@@ -388,7 +398,7 @@ class FolderTemplateManager {
   generateTemplateHTML(items, level = 0) {
     if (!items || !items.length) return '';
     
-    return items.map(item => `
+    return items.map((item, index) => `
       <div class="folder-item" data-id="${item.id}">
         <div class="flex items-center justify-between p-2 hover:bg-gray-50 rounded group">
           <div class="flex items-center">
@@ -419,6 +429,16 @@ class FolderTemplateManager {
             <button class="delete-folder text-sm text-red-600 hover:text-red-800 px-2 py-1 rounded hover:bg-red-50">
               <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+            <button class="move-up-folder text-sm text-gray-600 hover:text-gray-800 px-2 py-1 rounded hover:bg-gray-50 ${index === 0 ? 'opacity-50 cursor-not-allowed' : ''}">
+              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+              </svg>
+            </button>
+            <button class="move-down-folder text-sm text-gray-600 hover:text-gray-800 px-2 py-1 rounded hover:bg-gray-50 ${index === items.length - 1 ? 'opacity-50 cursor-not-allowed' : ''}">
+              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
               </svg>
             </button>
           </div>
@@ -457,6 +477,10 @@ class FolderTemplateManager {
         this.renameFolder(folderId);
       } else if (e.target.closest('.delete-folder')) {
         this.deleteFolder(folderId);
+      } else if (e.target.closest('.move-up-folder:not(.cursor-not-allowed)')) {
+        this.moveFolder(folderId, 'up');
+      } else if (e.target.closest('.move-down-folder:not(.cursor-not-allowed)')) {
+        this.moveFolder(folderId, 'down');
       }
     });
   }
@@ -598,6 +622,36 @@ class FolderTemplateManager {
       setTimeout(() => notification.remove(), 300);
     }, 2000);
   }
+
+  moveFolder(folderId, direction) {
+    const moveInArray = (arr) => {
+      const index = arr.findIndex(item => item.id === folderId);
+      if (index !== -1) {
+        if (direction === 'up' && index > 0) {
+          // 向上移动
+          [arr[index - 1], arr[index]] = [arr[index], arr[index - 1]];
+          return true;
+        } else if (direction === 'down' && index < arr.length - 1) {
+          // 向下移动
+          [arr[index], arr[index + 1]] = [arr[index + 1], arr[index]];
+          return true;
+        }
+        return false;
+      }
+      // 递归查找子文件夹
+      for (const item of arr) {
+        if (item.children && moveInArray(item.children)) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    if (moveInArray(this.templateData)) {
+      this.renderTemplate();
+      this.saveTemplateToStorage();
+    }
+  }
 }
 
 // OpenAI API 设置管理类
@@ -606,18 +660,21 @@ class OpenAISettingsManager {
     this.apiKeyInput = document.getElementById('openaiApiKey');
     this.apiUrlInput = document.getElementById('openaiApiUrl');
     this.modelSelect = document.getElementById('openaiModel');
-    this.customModelInput = document.getElementById('openaiCustomModel');
-    this.customModelContainer = document.getElementById('customModelInput');
+    this.customModelInput = document.getElementById('customModelInput');
+    this.customModelField = document.getElementById('openaiCustomModel');
+    this.testApiButton = document.getElementById('testApiConnection');
+    this.apiTestResult = document.getElementById('apiTestResult');
+    this.apiTestMessage = document.getElementById('apiTestMessage');
+    this.apiTestLoading = document.getElementById('apiTestLoading');
+    this.apiTestSuccessIcon = document.getElementById('apiTestSuccessIcon');
+    this.apiTestErrorIcon = document.getElementById('apiTestErrorIcon');
     this.toggleApiKeyButton = document.getElementById('toggleApiKey');
-    
+
     this.init();
   }
 
   init() {
-    // 加载保存的设置
     this.loadSettings();
-    
-    // 绑定事件
     this.bindEvents();
   }
 
@@ -626,47 +683,29 @@ class OpenAISettingsManager {
     this.toggleApiKeyButton.addEventListener('click', () => {
       const type = this.apiKeyInput.type;
       this.apiKeyInput.type = type === 'password' ? 'text' : 'password';
-      
-      // 更新图标
-      const svg = this.toggleApiKeyButton.querySelector('svg');
-      if (type === 'password') {
-        svg.innerHTML = `
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-        `;
-      } else {
-        svg.innerHTML = `
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-        `;
-      }
     });
 
-    // 输入验证和自动保存
-    this.apiKeyInput.addEventListener('input', () => {
-      this.validateAndSave();
-    });
-
-    this.apiUrlInput.addEventListener('input', () => {
-      this.validateAndSave();
-    });
-
-    // 模型选择和自定义模型处理
+    // 模型选择变更
     this.modelSelect.addEventListener('change', () => {
       this.handleModelChange();
       this.validateAndSave();
     });
 
-    this.customModelInput.addEventListener('input', () => {
-      this.validateAndSave();
-    });
+    // 输入验证和自动保存
+    this.apiKeyInput.addEventListener('input', () => this.validateAndSave());
+    this.apiUrlInput.addEventListener('input', () => this.validateAndSave());
+    this.customModelField?.addEventListener('input', () => this.validateAndSave());
+
+    // 添加 API 测试事件
+    this.testApiButton.addEventListener('click', () => this.testApiConnection());
   }
 
   handleModelChange() {
     const isCustom = this.modelSelect.value === 'custom';
-    this.customModelContainer.classList.toggle('hidden', !isCustom);
+    this.customModelInput.classList.toggle('hidden', !isCustom);
     
     if (!isCustom) {
-      this.customModelInput.value = '';
+      this.customModelField.value = '';
     }
   }
 
@@ -674,7 +713,7 @@ class OpenAISettingsManager {
     const apiKey = this.apiKeyInput.value.trim();
     const apiUrl = this.apiUrlInput.value.trim();
     const modelValue = this.modelSelect.value;
-    const customModel = this.customModelInput.value.trim();
+    const customModel = this.customModelField?.value.trim();
 
     // API Key 验证
     if (apiKey && !apiKey.startsWith('sk-')) {
@@ -695,10 +734,10 @@ class OpenAISettingsManager {
 
     // 自定义模型验证
     if (modelValue === 'custom' && !customModel) {
-      this.showError(this.customModelInput, '请输入自定义模型名称');
+      this.showError(this.customModelField, '请输入自定义模型名称');
       return false;
     } else {
-      this.clearError(this.customModelInput);
+      this.clearError(this.customModelField);
     }
 
     // 保存设置
@@ -707,27 +746,111 @@ class OpenAISettingsManager {
   }
 
   showError(element, message) {
-    // 移除旧的错误提示
-    this.clearError(element);
-    
-    // 添加错误样式
     element.classList.add('border-red-500');
-    
-    // 创建错误消息元素
     const errorDiv = document.createElement('div');
     errorDiv.className = 'text-red-500 text-sm mt-1 error-message';
     errorDiv.textContent = message;
-    
-    // 插入错误消息
     element.parentNode.appendChild(errorDiv);
   }
 
   clearError(element) {
+    if (!element) return;
     element.classList.remove('border-red-500');
     const errorMessage = element.parentNode.querySelector('.error-message');
     if (errorMessage) {
       errorMessage.remove();
     }
+  }
+
+  async testApiConnection() {
+    // 重置测试状态
+    this.resetTestStatus();
+    this.showTestLoading(true);
+
+    try {
+      const apiKey = this.apiKeyInput.value.trim();
+      const apiUrl = this.apiUrlInput.value.trim();
+      const model = this.modelSelect.value === 'custom' 
+        ? this.customModelField.value.trim() 
+        : this.modelSelect.value;
+
+      if (!apiKey) {
+        throw new Error('请输入 API Key');
+      }
+
+      if (!apiUrl) {
+        throw new Error('请输入 API URL');
+      }
+
+      // 构建请求 URL
+      const requestUrl = `${apiUrl}/chat/completions`;
+
+      // 发送测试请求
+      const response = await fetch(requestUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [
+            {
+              role: 'user',
+              content: 'Hello'
+            }
+          ],
+          max_tokens: 5
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        this.showTestSuccess('API 连接成功');
+      } else {
+        throw new Error(data.error?.message || '未知错误');
+      }
+    } catch (error) {
+      this.showTestError(`API 测试失败: ${error.message}`);
+    } finally {
+      this.showTestLoading(false);
+    }
+  }
+
+  resetTestStatus() {
+    this.apiTestResult.classList.add('hidden');
+    this.apiTestSuccessIcon.classList.add('hidden');
+    this.apiTestErrorIcon.classList.add('hidden');
+    this.apiTestMessage.textContent = '';
+  }
+
+  showTestLoading(show) {
+    if (show) {
+      this.apiTestLoading.classList.remove('hidden');
+      this.testApiButton.disabled = true;
+    } else {
+      this.apiTestLoading.classList.add('hidden');
+      this.testApiButton.disabled = false;
+    }
+  }
+
+  showTestSuccess(message) {
+    this.apiTestResult.classList.remove('hidden');
+    this.apiTestResult.classList.add('flex');
+    this.apiTestSuccessIcon.classList.remove('hidden');
+    this.apiTestMessage.textContent = message;
+    this.apiTestMessage.classList.remove('text-red-500');
+    this.apiTestMessage.classList.add('text-green-500');
+  }
+
+  showTestError(message) {
+    this.apiTestResult.classList.remove('hidden');
+    this.apiTestResult.classList.add('flex');
+    this.apiTestErrorIcon.classList.remove('hidden');
+    this.apiTestMessage.textContent = message;
+    this.apiTestMessage.classList.remove('text-green-500');
+    this.apiTestMessage.classList.add('text-red-500');
   }
 
   async loadSettings() {
@@ -739,9 +862,9 @@ class OpenAISettingsManager {
         this.apiUrlInput.value = apiUrl || 'https://api.openai.com/v1';
         
         // 处理模型设置
-        if (customModel) {
+        if (model === 'custom' && customModel) {
           this.modelSelect.value = 'custom';
-          this.customModelInput.value = customModel;
+          this.customModelField.value = customModel;
           this.handleModelChange();
         } else {
           this.modelSelect.value = model || 'gpt-3.5-turbo';
@@ -749,6 +872,7 @@ class OpenAISettingsManager {
       }
     } catch (error) {
       console.error('加载 OpenAI 设置失败:', error);
+      window.templateManager?.showNotification('加载设置失败: ' + error.message, 'error');
     }
   }
 
@@ -758,14 +882,19 @@ class OpenAISettingsManager {
       const settings = {
         apiKey: this.apiKeyInput.value.trim(),
         apiUrl: this.apiUrlInput.value.trim(),
-        model: modelValue === 'custom' ? 'custom' : modelValue,
-        customModel: modelValue === 'custom' ? this.customModelInput.value.trim() : ''
+        model: modelValue,
+        customModel: modelValue === 'custom' ? this.customModelField?.value?.trim() || '' : ''
       };
       
       await chrome.storage.local.set({ openaiSettings: settings });
       console.log('OpenAI 设置已保存');
+      
+      // 显示成功提示
+      window.templateManager?.showNotification('设置已保存', 'success');
     } catch (error) {
       console.error('保存 OpenAI 设置失败:', error);
+      // 显示错误提示
+      window.templateManager?.showNotification('保存设置失败: ' + error.message, 'error');
     }
   }
 }
@@ -790,7 +919,28 @@ async function loadOrganizePanelData() {
     // 从 chrome.storage.local 获取文件夹模板
     const { folderTemplate } = await chrome.storage.local.get('folderTemplate');
     if (folderTemplate) {
-      templateStructure.innerHTML = window.templateManager.generateTemplateHTML(folderTemplate);
+      // 创建目标文件夹结构的操作按钮
+      const templateHeader = document.createElement('div');
+      templateHeader.className = 'flex justify-between items-center mb-4';
+      templateHeader.innerHTML = `
+        <div class="flex space-x-2">
+          <button id="templateAddRootFolder" class="btn-secondary text-sm">
+            添加根文件夹
+          </button>
+        </div>
+      `;
+      templateStructure.innerHTML = '';
+      templateStructure.appendChild(templateHeader);
+
+      // 创建模板树容器
+      const templateTreeContainer = document.createElement('div');
+      templateTreeContainer.id = 'organizeTemplateTreeContainer';
+      templateTreeContainer.className = 'space-y-2';
+      templateTreeContainer.innerHTML = window.templateManager.generateTemplateHTML(folderTemplate);
+      templateStructure.appendChild(templateTreeContainer);
+
+      // 绑定事件
+      bindTemplateEvents();
     } else {
       templateStructure.innerHTML = '<div class="text-gray-500 p-4">未设置文件夹模板</div>';
     }
@@ -798,6 +948,108 @@ async function loadOrganizePanelData() {
     console.error('加载智能整理面板数据失败:', error);
     window.templateManager.showNotification('加载数据失败', 'error');
   }
+}
+
+// 绑定目标文件夹结构的事件
+function bindTemplateEvents() {
+  const container = document.getElementById('organizeTemplateTreeContainer');
+  const addRootButton = document.getElementById('templateAddRootFolder');
+
+  // 添加根文件夹按钮事件
+  addRootButton.addEventListener('click', () => {
+    const folderName = prompt('请输入文件夹名称:');
+    if (!folderName) return;
+
+    const newFolder = {
+      id: crypto.randomUUID(),
+      title: folderName,
+      children: [],
+      isOpen: false
+    };
+
+    // 更新模板数据
+    window.templateManager.templateData.push(newFolder);
+    
+    // 重新渲染模板树
+    container.innerHTML = window.templateManager.generateTemplateHTML(window.templateManager.templateData);
+    
+    // 自动保存更改
+    window.templateManager.saveTemplateToStorage();
+  });
+
+  // 文件夹操作事件
+  container.addEventListener('click', (e) => {
+    const folderItem = e.target.closest('.folder-item');
+    if (!folderItem) return;
+
+    const folderId = folderItem.dataset.id;
+    
+    // 处理文件夹展开/折叠
+    if (e.target.closest('.folder-toggle')) {
+      window.templateManager.toggleFolder(folderId);
+      container.innerHTML = window.templateManager.generateTemplateHTML(window.templateManager.templateData);
+      return;
+    }
+
+    // 处理其他按钮点击
+    if (e.target.closest('.add-subfolder')) {
+      const folderName = prompt('请输入文件夹名称:');
+      if (!folderName) return;
+
+      const newFolder = {
+        id: crypto.randomUUID(),
+        title: folderName,
+        children: [],
+        isOpen: false
+      };
+
+      window.templateManager.updateFolderInTree(window.templateManager.templateData, folderId, (folder) => {
+        if (!Array.isArray(folder.children)) {
+          folder.children = [];
+        }
+        folder.children.push(newFolder);
+      });
+
+      container.innerHTML = window.templateManager.generateTemplateHTML(window.templateManager.templateData);
+      window.templateManager.saveTemplateToStorage();
+    } else if (e.target.closest('.rename-folder')) {
+      const newName = prompt('请输入新的文件夹名称:');
+      if (!newName) return;
+
+      window.templateManager.updateFolderInTree(window.templateManager.templateData, folderId, (folder) => {
+        folder.title = newName;
+      });
+
+      container.innerHTML = window.templateManager.generateTemplateHTML(window.templateManager.templateData);
+      window.templateManager.saveTemplateToStorage();
+    } else if (e.target.closest('.delete-folder')) {
+      if (!confirm('确定要删除此文件夹吗？子文件夹也会被删除。')) return;
+
+      const deleteFromArray = (arr) => {
+        const index = arr.findIndex(item => item.id === folderId);
+        if (index !== -1) {
+          arr.splice(index, 1);
+          return true;
+        }
+        for (const item of arr) {
+          if (item.children && deleteFromArray(item.children)) {
+            return true;
+          }
+        }
+        return false;
+      };
+
+      deleteFromArray(window.templateManager.templateData);
+      container.innerHTML = window.templateManager.generateTemplateHTML(window.templateManager.templateData);
+      window.templateManager.saveTemplateToStorage();
+    } else if (e.target.closest('.move-up-folder:not(.cursor-not-allowed)')) {
+      window.templateManager.moveFolder(folderId, 'up');
+      container.innerHTML = window.templateManager.generateTemplateHTML(window.templateManager.templateData);
+    } else if (e.target.closest('.move-down-folder:not(.cursor-not-allowed)')) {
+      window.templateManager.moveFolder(folderId, 'down');
+      container.innerHTML = window.templateManager.generateTemplateHTML(window.templateManager.templateData);
+    }
+  });
 }
 
 // 生成书签树HTML
@@ -835,9 +1087,28 @@ function generateBookmarkTreeHTML(bookmark, level = 0) {
   return html;
 }
 
-// 确认整理
-async function handleConfirmOrganize() {
+// 添加全局变量用于控制整理过程
+let isOrganizing = false;
+
+// 添加全局变量存储整理结果
+let organizeResults = {
+  bookmarks: [],
+  template: null
+};
+
+// 开始整理
+async function handleStartOrganize() {
   try {
+    // 获取选项状态
+    const renameEnabled = document.getElementById('renameOption').checked;
+    const moveEnabled = document.getElementById('moveOption').checked;
+
+    // 如果都没选中，显示提示并返回
+    if (!renameEnabled && !moveEnabled) {
+      window.templateManager.showNotification('请至少选择一个整理选项', 'warning');
+      return;
+    }
+
     // 获取当前根文件夹ID和模板数据
     const { rootFolderId } = await chrome.storage.local.get('rootFolderId');
     const { folderTemplate } = await chrome.storage.local.get('folderTemplate');
@@ -847,32 +1118,532 @@ async function handleConfirmOrganize() {
       return;
     }
 
+    // 获取 OpenAI 设置
+    const openaiSettings = await chrome.storage.local.get('openaiSettings');
+    if (!openaiSettings.openaiSettings?.apiKey) {
+      window.templateManager.showNotification('请先配置 OpenAI API Key', 'error');
+      return;
+    }
+
     // 显示确认对话框
     if (!confirm('此操作将重新组织您的书签结构，建议先备份书签。是否继续？')) {
       return;
     }
 
-    window.templateManager.showNotification('开始整理书签...', 'info');
+    // 设置整理状态
+    isOrganizing = true;
+
+    // 重置进度显示
+    resetProgress();
+
+    // 显示进度面板
+    const progressPanel = document.getElementById('progressPanel');
+    progressPanel.classList.remove('hidden');
 
     // 获取当前根文件夹下的所有书签
     const rootFolder = (await chrome.bookmarks.getSubTree(rootFolderId))[0];
     const bookmarks = getAllBookmarks(rootFolder);
-
-    // 创建新的文件夹结构
-    const folderMap = new Map(); // 用于存储模板ID到实际文件夹ID的映射
-    await createFolderStructure(folderTemplate, rootFolderId, folderMap);
-
-    // 智能分类书签
-    await classifyBookmarks(bookmarks, folderMap, folderTemplate);
-
-    window.templateManager.showNotification('书签整理完成', 'success');
-    closeOrganizePanel();
     
-    // 刷新书签树显示
-    displayBookmarkTree(rootFolderId);
+    // 构建文件夹路径描述
+    const folderPaths = moveEnabled ? buildFolderPaths(folderTemplate) : [];
+
+    // 批量处理书签
+    const batchSize = 3;
+    const results = {
+      success: 0,
+      failed: 0,
+      skipped: 0
+    };
+
+    // 绑定停止按钮事件
+    const stopButton = document.getElementById('stopOrganize');
+    stopButton.addEventListener('click', () => {
+      isOrganizing = false;
+      window.templateManager.showNotification('正在停止整理...', 'warning');
+    });
+
+    const totalCount = bookmarks.length;
+    for (let i = 0; i < bookmarks.length && isOrganizing; i += batchSize) {
+      const batch = bookmarks.slice(i, Math.min(i + batchSize, bookmarks.length));
+      
+      // 更新进度
+      const progress = Math.min(100, Math.round(i / totalCount * 100));
+      updateProgress(progress);
+
+      // 并行处理当前批次
+      const promises = batch.map(bookmark => 
+        processBookmark(
+          bookmark, 
+          folderPaths, 
+          openaiSettings.openaiSettings,
+          results,
+          { renameEnabled, moveEnabled }
+        )
+      );
+
+      await Promise.all(promises);
+
+      // 更新计数显示
+      updateCounters(results);
+
+      // 等待一小段时间，避免请求过快
+      if (isOrganizing) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+
+    // 完成处理
+    if (isOrganizing) {
+      updateProgress(100);
+      document.querySelector('.item-name').textContent = '处理完成';
+      // 切换图标显示
+      document.querySelector('.processing-spinner').classList.add('hidden');
+      document.querySelector('.completed-icon').classList.remove('hidden');
+      
+      // 显示结果统计
+      window.templateManager.showNotification(
+        `处理完成: 成功${results.success}，失败${results.failed}，跳过${results.skipped}`,
+        results.failed === 0 ? 'success' : 'warning'
+      );
+    } else {
+      window.templateManager.showNotification(
+        `整理已停止: 成功${results.success}，失败${results.failed}，跳过${results.skipped}`,
+        'warning'
+      );
+    }
+
+    // 保存模板数据
+    organizeResults.template = folderTemplate;
+
+    // 更新原书签树显示
+    const bookmarkNodes = await chrome.bookmarks.getSubTree(rootFolderId);
+    if (bookmarkNodes && bookmarkNodes[0]) {
+      originalBookmarkTree.innerHTML = generateBookmarkTreeHTML(bookmarkNodes[0]);
+    }
+
   } catch (error) {
     console.error('书签整理失败:', error);
     window.templateManager.showNotification('整理失败: ' + error.message, 'error');
+  } finally {
+    isOrganizing = false;
+  }
+}
+
+// 更新计数器显示
+function updateCounters(results) {
+  document.querySelector('.success-count').textContent = `成功: ${results.success}`;
+  document.querySelector('.failed-count').textContent = `失败: ${results.failed}`;
+}
+
+// 更新进度显示
+function updateProgress(percentage) {
+  document.querySelector('.percentage').textContent = `${percentage}%`;
+}
+
+// 重置进度显示
+function resetProgress() {
+  document.querySelector('.processing-spinner').classList.remove('hidden');
+  document.querySelector('.completed-icon').classList.add('hidden');
+  document.querySelector('.item-name').textContent = '准备开始...';
+  document.querySelector('.percentage').textContent = '0%';
+  document.querySelector('.success-count').textContent = '成功: 0';
+  document.querySelector('.failed-count').textContent = '失败: 0';
+  document.getElementById('recentResults').innerHTML = '';
+}
+
+// 添加到最近结果
+function addToRecentResults(result) {
+  const recentResults = document.getElementById('recentResults');
+  const resultDiv = document.createElement('div');
+  resultDiv.className = `p-2 rounded ${result.success ? 'bg-green-50' : 'bg-red-50'}`;
+  
+  let content = `
+    <div class="flex items-center justify-between">
+      <div class="flex-1">
+        <span class="font-medium">${result.oldTitle}</span>
+  `;
+  
+  if (result.success) {
+    if (result.newTitle && result.newTitle !== result.oldTitle) {
+      content += ` → <span class="text-green-600">${result.newTitle}</span>`;
+    }
+    if (result.folderPath) {
+      content += `<br><span class="text-gray-500">移动到: ${result.folderPath}</span>`;
+    }
+  } else {
+    content += `<br><span class="text-red-500">错误: ${result.error}</span>`;
+  }
+  
+  content += `
+      </div>
+      <svg class="w-5 h-5 ${result.success ? 'text-green-500' : 'text-red-500'}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${result.success ? 'M5 13l4 4L19 7' : 'M6 18L18 6M6 6l12 12'}" />
+      </svg>
+    </div>
+  `;
+  
+  resultDiv.innerHTML = content;
+  recentResults.insertBefore(resultDiv, recentResults.firstChild);
+}
+
+// 处理单个书签
+async function processBookmark(bookmark, folderPaths, openaiSettings, results, options) {
+  try {
+    // 更新当前处理项显示
+    document.querySelector('.item-name').textContent = bookmark.title;
+
+    let newTitle = bookmark.title;
+    let folderId = null;
+    let folderPath = null;
+
+    // 根据选项执行相应的操作
+    if (options.renameEnabled) {
+      // 调用 OpenAI API 重命名书签
+      newTitle = await renameBookmark(bookmark, openaiSettings);
+    }
+    
+    if (options.moveEnabled) {
+      // 调用 OpenAI API 分类书签
+      const result = await classifyBookmark(
+        bookmark,
+        newTitle,
+        folderPaths,
+        openaiSettings
+      );
+      folderId = result.folderId;
+      folderPath = result.folderPath;
+    }
+
+    // 存储分析结果
+    const bookmarkResult = {
+      id: bookmark.id,
+      oldTitle: bookmark.title,
+      newTitle: newTitle,
+      url: bookmark.url,
+      targetFolderId: folderId,
+      targetFolderPath: folderPath
+    };
+    
+    organizeResults.bookmarks.push(bookmarkResult);
+
+    // 更新结果统计
+    results.success++;
+    
+    // 添加到最近结果
+    addToRecentResults({
+      success: true,
+      oldTitle: bookmark.title,
+      newTitle: options.renameEnabled ? newTitle : null,
+      folderPath: options.moveEnabled ? folderPath : null
+    });
+
+  } catch (error) {
+    console.error(`处理书签 ${bookmark.title} 失败:`, error);
+    results.failed++;
+    
+    // 添加到最近结果
+    addToRecentResults({
+      success: false,
+      oldTitle: bookmark.title,
+      error: error.message
+    });
+  }
+}
+
+// 重命名书签
+async function renameBookmark(bookmark, openaiSettings) {
+  const prompt = `你是一个专业的书签命名助手。请根据以下信息为书签创建一个结构化的新名称：
+
+原始名称: ${bookmark.title}
+URL: ${bookmark.url}
+
+要求：
+1. 返回格式必须是: "精炼名称 | 功能描述"
+2. 精炼名称：保留最核心的网站/资源名称，去除无用词汇
+3. 功能描述：用10字以内简述网站的主要功能或作用
+4. 使用简体中文
+5. 确保分隔符是英文竖线加空格" | "
+6. 示例：
+   - "Figma | 在线设计工具"
+   - "GitHub | 代码托管平台"
+   - "花瓣网 | 设计灵感库"
+
+请只返回新名称，不需要解释。`;
+
+  const response = await fetch(`${openaiSettings.apiUrl}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${openaiSettings.apiKey}`
+    },
+    body: JSON.stringify({
+      model: openaiSettings.model === 'custom' ? openaiSettings.customModel : openaiSettings.model,
+      messages: [{
+        role: 'user',
+        content: prompt
+      }],
+      temperature: 0.3,
+      max_tokens: 50
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`重命名API请求失败: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.choices[0].message.content.trim();
+}
+
+// 分类书签
+async function classifyBookmark(bookmark, newTitle, folderPaths, openaiSettings) {
+  const prompt = `你是一个专业的书签分类助手。请根据以下信息将书签分类到最合适的目标文件夹：
+
+书签信息：
+- 标题: ${bookmark.title}
+- 新标题: ${newTitle}
+- URL: ${bookmark.url}
+
+可用的目标文件夹结构：
+${folderPaths.map(f => `- ${f.id}: ${f.path}`).join('\n')}
+
+要求：
+1. 分析书签内容和URL特征
+2. 考虑网站的主要用途
+3. 优先选择更具体的子文件夹
+4. 如果内容跨多个类别，选择最主要的一个
+5. 考虑文件夹的层级关系
+6. 必须返回上述文件夹列表中的某个ID
+
+请只返回最合适的文件夹ID，不要返回路径，不要加任何额外说明，格式如下：
+ID值`;
+
+  const response = await fetch(`${openaiSettings.apiUrl}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${openaiSettings.apiKey}`
+    },
+    body: JSON.stringify({
+      model: openaiSettings.model === 'custom' ? openaiSettings.customModel : openaiSettings.model,
+      messages: [{
+        role: 'user',
+        content: prompt
+      }],
+      temperature: 0.3,
+      max_tokens: 50
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`分类API请求失败: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const folderId = data.choices[0].message.content.trim();
+  
+  // 验证返回的文件夹ID是否有效
+  const folderInfo = folderPaths.find(f => f.id === folderId);
+  if (!folderInfo) {
+    console.warn(`API返回的文件夹ID无效: ${folderId}，将使用根文件夹`);
+    return { 
+      folderId: 'root',
+      folderPath: '根文件夹'
+    };
+  }
+
+  return { 
+    folderId: folderInfo.id,
+    folderPath: folderInfo.path
+  };
+}
+
+// 应用变更
+async function handleConfirmOrganize() {
+  try {
+    if (!organizeResults.bookmarks.length) {
+      window.templateManager.showNotification('没有可应用的变更', 'warning');
+      return;
+    }
+
+    // 获取选项状态
+    const renameEnabled = document.getElementById('renameOption').checked;
+    const moveEnabled = document.getElementById('moveOption').checked;
+
+    // 获取当前根文件夹ID和模板数据
+    const { rootFolderId } = await chrome.storage.local.get('rootFolderId');
+    const { folderTemplate } = await chrome.storage.local.get('folderTemplate');
+    
+    if (!rootFolderId || (moveEnabled && !folderTemplate)) {
+      window.templateManager.showNotification('缺少必要的配置信息', 'error');
+      return;
+    }
+
+    // 显示确认对话框
+    if (!confirm('确定要应用这些变更吗？此操作无法撤消。')) {
+      return;
+    }
+
+    let folderMap = new Map();
+    folderMap.set('root', rootFolderId);
+
+    // 如果需要移动文件夹，则创建文件夹结构
+    if (moveEnabled) {
+      // 显示进度
+      document.querySelector('.item-name').textContent = '正在清理原有文件夹结构...';
+
+      // 清理原有文件夹结构
+      try {
+        const rootFolder = (await chrome.bookmarks.getSubTree(rootFolderId))[0];
+        if (rootFolder.children) {
+          // 先移动所有书签到根文件夹
+          for (const child of rootFolder.children) {
+            await moveBookmarksToRoot(child, rootFolderId);
+          }
+          // 然后删除所有子文件夹
+          for (const child of rootFolder.children) {
+            if (!child.url) {
+              await chrome.bookmarks.removeTree(child.id);
+            }
+          }
+        }
+      } catch (error) {
+        throw new Error(`清理原有文件夹结构失败: ${error.message}`);
+      }
+
+      // 显示进度
+      document.querySelector('.item-name').textContent = '正在创建新的文件夹结构...';
+
+      // 创建文件夹结构并记录新旧ID映射
+      try {
+        await createFolderStructure(folderTemplate, rootFolderId, folderMap);
+        console.log('文件夹映射表:', Object.fromEntries(folderMap));
+      } catch (error) {
+        throw new Error(`创建文件夹结构失败: ${error.message}`);
+      }
+    }
+
+    // 更新书签
+    let success = 0;
+    let failed = 0;
+    const total = organizeResults.bookmarks.length;
+
+    for (let i = 0; i < organizeResults.bookmarks.length; i++) {
+      const bookmark = organizeResults.bookmarks[i];
+      
+      // 更新进度
+      const progress = Math.round((i + 1) / total * 100);
+      updateProgress(progress);
+      document.querySelector('.item-name').textContent = `正在更新书签 (${i + 1}/${total})...`;
+
+      try {
+        // 如果启用了重命名，更新书签标题
+        if (renameEnabled && bookmark.newTitle !== bookmark.oldTitle) {
+          await chrome.bookmarks.update(bookmark.id, { 
+            title: bookmark.newTitle 
+          });
+        }
+        
+        // 如果启用了移动文件夹，移动书签到目标文件夹
+        if (moveEnabled && bookmark.targetFolderId) {
+          // 获取目标文件夹的实际 ID
+          const actualFolderId = folderMap.get(bookmark.targetFolderId);
+          if (!actualFolderId) {
+            console.warn(`找不到目标文件夹的映射ID: ${bookmark.targetFolderId}，将使用根文件夹`);
+            console.warn('当前书签:', bookmark);
+            console.warn('可用的映射:', Object.fromEntries(folderMap));
+          }
+          
+          // 移动书签到目标文件夹
+          const targetFolderId = actualFolderId || rootFolderId;
+          await chrome.bookmarks.move(bookmark.id, { 
+            parentId: targetFolderId
+          });
+        }
+        
+        console.log(`书签更新成功: ${bookmark.oldTitle} -> ${bookmark.newTitle}`);
+        success++;
+      } catch (error) {
+        console.error(`更新书签 ${bookmark.oldTitle} 失败:`, error);
+        console.error('书签信息:', bookmark);
+        failed++;
+      }
+    }
+
+    // 显示结果
+    window.templateManager.showNotification(
+      `变更已应用: 成功${success}，失败${failed}`,
+      failed === 0 ? 'success' : 'warning'
+    );
+
+    // 切换图标显示
+    document.querySelector('.processing-spinner').classList.add('hidden');
+    document.querySelector('.completed-icon').classList.remove('hidden');
+    document.querySelector('.item-name').textContent = '变更已应用';
+
+    // 清空结果
+    organizeResults = {
+      bookmarks: [],
+      template: null
+    };
+
+    // 关闭面板并切换到默认视图
+    document.getElementById('defaultView').classList.remove('hidden');
+    document.getElementById('smartOrganizePanel').classList.add('hidden');
+    
+    // 更新原书签树显示
+    const bookmarkTree = await chrome.bookmarks.getSubTree(rootFolderId);
+    if (bookmarkTree && bookmarkTree[0]) {
+      document.getElementById('bookmarkTree').innerHTML = generateBookmarkTreeHTML(bookmarkTree[0]);
+    }
+
+  } catch (error) {
+    console.error('应用变更失败:', error);
+    window.templateManager.showNotification('应用变更失败: ' + error.message, 'error');
+  }
+}
+
+// 创建文件夹结构并记录新旧ID映射
+async function createFolderStructure(folders, parentId, folderMap) {
+  for (const folder of folders) {
+    try {
+      // 创建文件夹
+      const newFolder = await chrome.bookmarks.create({
+        parentId: parentId,
+        title: folder.title
+      });
+      
+      // 保存新旧ID映射
+      folderMap.set(folder.id, newFolder.id);
+      console.log(`文件夹映射: ${folder.title} - 模板ID(${folder.id}) -> 新ID(${newFolder.id})`);
+
+      // 递归创建子文件夹
+      if (folder.children && folder.children.length > 0) {
+        await createFolderStructure(folder.children, newFolder.id, folderMap);
+      }
+    } catch (error) {
+      console.error(`创建文件夹 ${folder.title} 失败:`, error);
+      throw error;
+    }
+  }
+}
+
+// 递归移动文件夹中的所有书签到根文件夹
+async function moveBookmarksToRoot(node, rootId) {
+  if (node.children) {
+    for (const child of node.children) {
+      if (child.url) {
+        // 如果是书签，移动到根文件夹
+        try {
+          await chrome.bookmarks.move(child.id, { parentId: rootId });
+        } catch (error) {
+          console.error(`移动书签失败: ${error.message}`);
+        }
+      } else {
+        // 如果是文件夹，递归处理
+        await moveBookmarksToRoot(child, rootId);
+      }
+    }
   }
 }
 
@@ -893,66 +1664,14 @@ function getAllBookmarks(node) {
   return bookmarks;
 }
 
-// 递归创建文件夹结构
-async function createFolderStructure(template, parentId, folderMap) {
-  for (const folder of template) {
-    try {
-      // 创建文件夹
-      const newFolder = await chrome.bookmarks.create({
-        parentId: parentId,
-        title: folder.title
-      });
-      
-      // 保存模板ID到实际文件夹ID的映射
-      folderMap.set(folder.id, newFolder.id);
-      
-      // 递归创建子文件夹
-      if (folder.children && folder.children.length > 0) {
-        await createFolderStructure(folder.children, newFolder.id, folderMap);
-      }
-    } catch (error) {
-      console.error(`创建文件夹 ${folder.title} 失败:`, error);
-      throw error;
-    }
-  }
-}
-
-// 智能分类书签
-async function classifyBookmarks(bookmarks, folderMap, template) {
-  const openaiSettings = await chrome.storage.local.get('openaiSettings');
-  if (!openaiSettings.openaiSettings?.apiKey) {
-    throw new Error('请先配置 OpenAI API Key');
-  }
-
-  const { apiKey, apiUrl, model, customModel } = openaiSettings.openaiSettings;
-  const selectedModel = model === 'custom' ? customModel : model;
-
-  // 构建文件夹路径描述
-  const folderPaths = buildFolderPaths(template);
-  
-  // 批量处理书签
-  const batchSize = 5;
-  for (let i = 0; i < bookmarks.length; i += batchSize) {
-    const batch = bookmarks.slice(i, i + batchSize);
-    const promises = batch.map(bookmark => 
-      classifyBookmark(bookmark, folderPaths, folderMap, apiKey, apiUrl, selectedModel)
-    );
-    
-    await Promise.all(promises);
-    
-    // 更新进度
-    const progress = Math.min(100, Math.round((i + batchSize) / bookmarks.length * 100));
-    window.templateManager.showNotification(`正在整理: ${progress}%`, 'info');
-  }
-}
-
 // 构建文件夹路径描述
 function buildFolderPaths(template, parentPath = '', result = []) {
   for (const folder of template) {
     const currentPath = parentPath ? `${parentPath} > ${folder.title}` : folder.title;
     result.push({
-      id: folder.id,
+      id: folder.id,  // 这是模板中的ID
       path: currentPath,
+      title: folder.title,  // 添加标题信息，用于后续匹配
       description: `${currentPath}: 适合存放与${folder.title}相关的书签`
     });
     
@@ -964,59 +1683,26 @@ function buildFolderPaths(template, parentPath = '', result = []) {
   return result;
 }
 
-// 对单个书签进行分类
-async function classifyBookmark(bookmark, folderPaths, folderMap, apiKey, apiUrl, model) {
-  try {
-    // 准备 API 请求数据
-    const prompt = `作为一个书签分类助手，请帮我将以下书签放入最合适的文件夹。
-书签信息：
-- 标题: ${bookmark.title}
-- URL: ${bookmark.url}
+// 绑定进度面板展开/收起事件
+document.addEventListener('DOMContentLoaded', () => {
+  const progressHeader = document.getElementById('progressHeader');
+  const progressDetails = document.getElementById('progressDetails');
+  const expandProgress = document.getElementById('expandProgress');
+  
+  progressHeader.addEventListener('click', () => {
+    const isExpanded = !progressDetails.classList.contains('hidden');
+    progressDetails.classList.toggle('hidden');
+    expandProgress.style.transform = isExpanded ? 'rotate(0deg)' : 'rotate(180deg)';
+  });
 
-可选的文件夹路径：
-${folderPaths.map(f => `- ${f.description}`).join('\n')}
-
-请只返回最合适的文件夹路径的ID，格式如下：
-{folder_id}`;
-
-    // 调用 OpenAI API
-    const response = await fetch(`${apiUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: [{
-          role: 'user',
-          content: prompt
-        }],
-        temperature: 0.3,
-        max_tokens: 50
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`API 请求失败: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const folderId = data.choices[0].message.content.trim();
-    
-    // 获取实际的文件夹ID
-    const actualFolderId = folderMap.get(folderId);
-    if (!actualFolderId) {
-      console.warn(`未找到文件夹ID ${folderId} 的映射，将保持书签位置不变`);
-      return;
-    }
-
-    // 移动书签到对应文件夹
-    await chrome.bookmarks.move(bookmark.id, {
-      parentId: actualFolderId
-    });
-  } catch (error) {
-    console.error(`处理书签 ${bookmark.title} 失败:`, error);
-    // 继续处理其他书签，不中断整个过程
-  }
-} 
+  // 在应用变更后清理进度显示
+  document.getElementById('confirmOrganize').addEventListener('click', () => {
+    const progressPanel = document.getElementById('progressPanel');
+    progressPanel.classList.add('hidden');
+    document.getElementById('recentResults').innerHTML = '';
+    document.querySelector('.success-count').textContent = '成功: 0';
+    document.querySelector('.failed-count').textContent = '失败: 0';
+    document.querySelector('.percentage').textContent = '0%';
+    document.querySelector('.item-name').textContent = '准备开始...';
+  });
+}); 

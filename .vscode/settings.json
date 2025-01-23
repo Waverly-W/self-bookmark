@@ -1,5 +1,6 @@
 {
     "css.customData": [
         ".vscode/tailwindcss.json"
-    ]
+    ],
+    "json.schemaDownload.enable": false
 }

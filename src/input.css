@@ -237,4 +237,41 @@
   #smartOrganizeBtn:hover svg {
     @apply scale-110;
   }
+
+  /* 进度面板样式 */
+  #progressPanel {
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  #progressPanel .card {
+    @apply p-0;
+  }
+
+  #progressPanel #progressHeader {
+    @apply min-h-[64px];
+  }
+
+  #progressPanel #progressDetails {
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  #progressPanel #progressDetails.hidden {
+    @apply h-0 overflow-hidden;
+  }
+
+  #progressPanel #recentResults {
+    @apply overflow-y-auto;
+  }
+
+  #progressPanel #recentResults::-webkit-scrollbar {
+    @apply w-1.5;
+  }
+
+  #progressPanel #recentResults::-webkit-scrollbar-track {
+    @apply bg-gray-100 rounded-full;
+  }
+
+  #progressPanel #recentResults::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 hover:bg-gray-400 rounded-full transition-colors duration-200;
+  }
 } 

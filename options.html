@@ -14,7 +14,7 @@
         <div class="h-1 w-20 bg-blue-500 rounded"></div>
       </div>
       <div class="flex space-x-4">
-        <button id="smartOrganizeBtn" class="btn-primary flex items-center space-x-2" aria-label="智能整理">
+        <button id="smartOrganizeBtn" class="btn-primary flex items-center space-x-2 transition-all duration-300 hover:bg-blue-600" aria-label="智能整理">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
           </svg>
@@ -48,10 +48,94 @@
           </div>
         </div>
       </div>
+
+      <!-- 进度显示 -->
+      <div id="progressPanel" class="hidden mt-6">
+          <div class="flex flex-col">
+            <!-- 简化的进度显示 -->
+            <div class="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-3 rounded-t-lg transition-colors duration-200" id="progressHeader">
+              <div class="flex items-center space-x-4">
+                <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-600 bg-blue-200">
+                  处理进度
+                </span>
+                <div class="flex items-center space-x-2">
+                  <!-- 处理中图标 -->
+                  <svg class="w-4 h-4 text-blue-500 animate-spin processing-spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <!-- 完成图标 -->
+                  <svg class="w-4 h-4 text-green-500 hidden completed-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span class="current-item text-sm text-gray-700">
+                    <span class="item-name font-medium">准备开始...</span>
+                    <span class="item-details text-gray-500"></span>
+                  </span>
+                </div>
+              </div>
+              <div class="flex items-center space-x-4">
+                <div class="text-sm">
+                  <span class="success-count text-green-600">成功: 0</span>
+                  <span class="mx-2 text-gray-300">|</span>
+                  <span class="failed-count text-red-600">失败: 0</span>
+                  (<span class="percentage">0%</span>)
+                </div>
+                <svg class="w-5 h-5 transform transition-transform duration-200" id="expandProgress" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+
+            <!-- 详细进度信息（默认隐藏） -->
+            <div id="progressDetails" class="hidden">
+              <div class="border-t">
+                <div class="p-4">
+                  <div class="text-sm text-gray-600 mb-2">处理历史:</div>
+                  <div id="recentResults" class="space-y-2 overflow-y-auto" style="max-height: calc(100vh - 500px);">
+                    <!-- 处理历史将在这里显示 -->
+                  </div>
+                  
+                  <!-- 操作按钮 -->
+                  <div class="flex justify-end space-x-2 pt-4 mt-4 border-t">
+                    <button id="stopOrganize" class="btn-secondary text-sm flex items-center space-x-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      <span>停止整理</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
       
+      <!-- 操作按钮 -->
       <div class="mt-6 flex justify-end space-x-4">
-        <button id="cancelOrganize" class="btn-secondary">取消</button>
-        <button id="confirmOrganize" class="btn-primary">确认整理</button>
+        <div class="flex items-center space-x-4">
+          <div class="flex items-center space-x-2">
+            <input type="checkbox" id="renameOption" class="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+            <label for="renameOption" class="text-sm text-gray-700">重命名书签</label>
+          </div>
+          <div class="flex items-center space-x-2">
+            <input type="checkbox" id="moveOption" class="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+            <label for="moveOption" class="text-sm text-gray-700">移动到目标文件夹</label>
+          </div>
+          <button id="startOrganize" class="btn-primary flex items-center space-x-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>开始整理</span>
+          </button>
+        </div>
+        <button id="confirmOrganize" class="btn-primary flex items-center space-x-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          <span>应用变更</span>
+        </button>
       </div>
     </div>
 
@@ -187,9 +271,34 @@
                              id="openaiCustomModel" 
                              class="input-field" 
                              placeholder="输入自定义模型名称，例如: gpt-4-32k">
-                      <div class="text-xs text-gray-500 mt-1">
-                        请输入完整的模型标识符
-                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- API 测试按钮和结果显示 -->
+                <div class="pt-2">
+                  <div class="flex items-center space-x-2">
+                    <button id="testApiConnection" class="btn-secondary text-sm flex items-center space-x-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      <span>测试连接</span>
+                    </button>
+                    <div id="apiTestResult" class="text-sm hidden items-center space-x-1">
+                      <svg id="apiTestSuccessIcon" class="h-4 w-4 text-green-500 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                      <svg id="apiTestErrorIcon" class="h-4 w-4 text-red-500 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      <span id="apiTestMessage" class="text-gray-600"></span>
+                    </div>
+                    <!-- Loading 动画 -->
+                    <div id="apiTestLoading" class="hidden">
+                      <svg class="animate-spin h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
                     </div>
                   </div>
                 </div>
