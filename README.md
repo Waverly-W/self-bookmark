@@ -1,9 +1,89 @@
-# SelfBookmark - Personal Bookmark Management Extension
+# 智能书签管理器 (Smart Bookmark Manager)
 
-This Chrome extension helps you manage your bookmarks efficiently and personally.
+一个强大的 Chrome 扩展，帮助你智能地组织和管理书签，让书签管理更轻松、更有条理。
 
-## Running This Extension
+## ✨ 核心功能
 
-1. Clone this repository.
-2. Load this directory in Chrome as an [unpacked extension](https://developer.chrome.com/docs/extensions/mv3/getstarted/development-basics/#load-unpacked).
-3. Click the extension icon in the Chrome toolbar to manage your bookmarks.
+### 🎯 智能重命名
+
+- 采用三级定位法：平台标识 + 核心功能 + 补充说明
+- 智能识别内容类型，保留重要标题信息
+- 统一的命名规范，提升视觉体验
+- 丰富的 emoji 标识系统
+
+示例：
+
+- 📺 B 站 | 科技区 | 硬件评测合集
+- 📚 掘金 | Vue 教程 | 深入理解 Vue3 组件化开发
+
+### 📂 智能分类
+
+- 自定义文件夹模板
+- 基于 AI 的智能分类
+- 批量整理功能
+- 灵活的文件夹结构管理
+
+### 🎨 特色优势
+
+- 基于 OpenAI API 的智能处理
+- 可自定义的分类规则
+- 批量处理能力
+- 直观的操作界面
+- 实时处理反馈
+
+## 🚀 使用方法
+
+### 1. 安装扩展
+
+1. 下载或克隆此仓库
+2. 打开 Chrome 浏览器，进入扩展管理页面 (chrome://extensions/)
+3. 开启"开发者模式"
+4. 点击"加载已解压的扩展程序"，选择项目目录
+
+### 2. 配置设置
+
+1. 点击扩展图标，进入设置页面
+2. 配置 OpenAI API（需要自己的 API Key）
+3. 设置根文件夹和文件夹模板
+4. 自定义命名规则（可选）
+
+### 3. 开始使用
+
+1. 选择要整理的书签文件夹
+2. 选择需要的功能（重命名/分类）
+3. 点击开始，等待处理完成
+4. 确认更改并应用
+
+## ⚙️ 配置说明
+
+### OpenAI API 设置
+
+- API Key 配置
+- 自定义 API 地址
+- 模型选择
+- 自定义模型支持
+
+### 文件夹模板
+
+- 支持多级文件夹结构
+- 灵活的模板编辑
+- 导入现有文件夹结构
+- 拖拽排序功能
+
+## 🛠️ 技术栈
+
+- Chrome Extension API
+- OpenAI API
+- TailwindCSS
+- JavaScript
+
+## 📝 注意事项
+
+- 需要自己的 OpenAI API Key
+- 建议在使用前备份重要书签
+- 批量处理时请耐心等待
+- 可以随时中断处理过程
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request 来帮助改进这个项目！
