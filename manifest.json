@@ -4,9 +4,18 @@
   "version": "1.0",
   "manifest_version": 3,
   "permissions": ["bookmarks", "storage"],
+  "icons": {
+    "16": "src/icon_WH_16x16px.png",
+    "48": "src/icon_WH_48x48px.png",
+    "128": "src/icon_WH_128x128px.png"
+  },
   "action": {
     "default_popup": "popup.html",
-    "default_icon": "selfbookmark.png"
+    "default_icon": {
+      "16": "src/icon_WH_16x16px.png",
+      "48": "src/icon_WH_48x48px.png",
+      "128": "src/icon_WH_128x128px.png"
+    }
   },
   "options_page": "options.html"
 }
