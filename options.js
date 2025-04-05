@@ -716,12 +716,12 @@ class OpenAISettingsManager {
     const customModel = this.customModelField?.value.trim();
 
     // API Key 验证
-    if (apiKey && !apiKey.startsWith('sk-')) {
-      this.showError(this.apiKeyInput, '无效的 API Key 格式');
-      return false;
-    } else {
-      this.clearError(this.apiKeyInput);
-    }
+    // if (!apiKey) {
+    //   this.showError(this.apiKeyInput, '无效的 API Key 格式');
+    //   return false;
+    // } else {
+    //   this.clearError(this.apiKeyInput);
+    // }
 
     // API URL 验证
     try {
